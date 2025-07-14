@@ -103,7 +103,6 @@ public class MongoConfig extends AbstractMongoClientConfiguration {
      * 配置 MongoDB Template
      */
     @Bean
-    @Override
     public MongoTemplate mongoTemplate() {
         MongoTemplate template = new MongoTemplate(mongoClient(), getDatabaseName());
         
@@ -125,7 +124,7 @@ public class MongoConfig extends AbstractMongoClientConfiguration {
      */
     @Bean
     public MappingMongoConverter mappingMongoConverter() {
-        DefaultDbRefResolver dbRefResolver = new DefaultDbRefResolver(mongoTemplate().getMongoDbFactory());
+        DefaultDbRefResolver dbRefResolver = new DefaultDbRefResolver(mongoTemplate().getMongoDatabaseFactory());
         MappingMongoConverter converter = new MappingMongoConverter(dbRefResolver, new MongoMappingContext());
         
         // 移除 _class 字段
