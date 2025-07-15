@@ -64,4 +64,6 @@ public class MigrationStatusDTO {
 
 	public Long getEstimatedRemainingTime() { return estimatedRemainingTime; }
 	public void setEstimatedRemainingTime(Long estimatedRemainingTime) { this.estimatedRemainingTime = estimatedRemainingTime; }
+
+
 }
