@@ -332,15 +332,13 @@ public class JobManagementService {
      */
     private void saveJobExecutionHistory(JobExecution jobExecution, JobConfigDTO jobConfig) {
         JobExecutionHistory history = new JobExecutionHistory();
-        history.setExecutionId(jobExecution.getId());
+        history.setId(jobExecution.getId());
         history.setJobName(jobExecution.getJobInstance().getJobName());
         history.setStatus(jobExecution.getStatus().name());
         history.setStartTime(jobExecution.getStartTime() != null ? 
-            jobExecution.getStartTime().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime() : 
-            LocalDateTime.now());
+        		 jobExecution.getStartTime() :LocalDateTime.now());
         history.setEndTime(jobExecution.getEndTime() != null ? 
-            jobExecution.getEndTime().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime() : 
-            null);
+            jobExecution.getEndTime() : null);
         history.setJobParameters(jobExecution.getJobParameters().toString());
         history.setExitCode(jobExecution.getExitStatus().getExitCode());
         history.setExitMessage(jobExecution.getExitStatus().getExitDescription());
@@ -353,22 +351,20 @@ public class JobManagementService {
      */
     private JobExecutionDTO convertToJobExecutionDTO(JobExecution jobExecution) {
         JobExecutionDTO dto = new JobExecutionDTO();
-        dto.setExecutionId(jobExecution.getId());
+        dto.setId(jobExecution.getId());
         dto.setJobName(jobExecution.getJobInstance().getJobName());
         dto.setStatus(jobExecution.getStatus().name());
         dto.setStartTime(jobExecution.getStartTime() != null ? 
-            jobExecution.getStartTime().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime() : 
-            null);
+            jobExecution.getStartTime() : null);
         dto.setEndTime(jobExecution.getEndTime() != null ? 
-            jobExecution.getEndTime().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime() : 
-            null);
+            jobExecution.getEndTime() : null);
         dto.setExitCode(jobExecution.getExitStatus().getExitCode());
         dto.setExitMessage(jobExecution.getExitStatus().getExitDescription());
         
-        // 計算執行時間
-        if (jobExecution.getStartTime() != null && jobExecution.getEndTime() != null) {
-            long durationMillis = jobExecution.getEndTime().getTime() - jobExecution.getStartTime().getTime();
-            dto.setDuration(durationMillis / 1000); // 轉換為秒
+     // 使用 Duration 計算秒數
+        if (dto.getStartTime() != null && dto.getEndTime() != null) {
+            long durationSeconds = java.time.Duration.between(dto.getStartTime(), dto.getEndTime()).getSeconds();
+            dto.setDuration(durationSeconds);
         }
         
         return dto;
@@ -379,7 +375,7 @@ public class JobManagementService {
      */
     private JobExecutionDTO convertToJobExecutionDTO(JobExecutionHistory history) {
         JobExecutionDTO dto = new JobExecutionDTO();
-        dto.setExecutionId(history.getExecutionId());
+        dto.setId(history.getId());
         dto.setJobName(history.getJobName());
         dto.setStatus(history.getStatus());
         dto.setStartTime(history.getStartTime());

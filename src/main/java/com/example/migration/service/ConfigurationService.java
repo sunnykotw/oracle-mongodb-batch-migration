@@ -277,30 +277,34 @@ public class ConfigurationService {
             // 排程配置
             JsonNode scheduleNode = jobNode.get("schedule");
             if (scheduleNode != null) {
-                Map<String, Object> schedule = new HashMap<>();
-                schedule.put("cron", scheduleNode.get("cron").asText());
-                schedule.put("enabled", scheduleNode.get("enabled").asBoolean());
+            	JobConfigDTO.ScheduleConfig schedule = new JobConfigDTO.ScheduleConfig();
+            	schedule.setCron(scheduleNode.get("cron").asText());
+            	schedule.setEnabled(scheduleNode.get("enabled").asBoolean());
                 jobConfig.setSchedule(schedule);
             }
             
             // 來源配置
             JsonNode sourceNode = jobNode.get("source");
             if (sourceNode != null) {
-                Map<String, Object> source = yamlMapper.convertValue(sourceNode, Map.class);
+            	JobConfigDTO.SourceConfig source = new JobConfigDTO.SourceConfig();
+            	source.setOracle(yamlMapper.convertValue(sourceNode.get("oracle"), JobConfigDTO.OracleConfig.class));
                 jobConfig.setSource(source);
             }
             
             // 目標配置
             JsonNode targetNode = jobNode.get("target");
             if (targetNode != null) {
-                Map<String, Object> target = yamlMapper.convertValue(targetNode, Map.class);
+            	JobConfigDTO.TargetConfig target = new JobConfigDTO.TargetConfig();
+            	target.setMongodb(yamlMapper.convertValue(targetNode.get("mongodb"), JobConfigDTO.MongodbConfig.class));
                 jobConfig.setTarget(target);
             }
             
             // 封存配置
             JsonNode archiveNode = jobNode.get("archive");
             if (archiveNode != null) {
-                Map<String, Object> archive = yamlMapper.convertValue(archiveNode, Map.class);
+				JobConfigDTO.ArchiveConfig archive = new JobConfigDTO.ArchiveConfig();
+				archive.setTargetTable(archiveNode.get("target_table").asText());
+				archive.setEnabled(archiveNode.get("enabled").asBoolean());
                 jobConfig.setArchive(archive);
             }
             
@@ -361,27 +365,27 @@ public class ConfigurationService {
     /**
      * 驗證來源配置
      */
-    private void validateSourceConfig(Map<String, Object> source, List<String> errors) {
-        Map<String, Object> oracle = (Map<String, Object>) source.get("oracle");
+    private void validateSourceConfig(JobConfigDTO.SourceConfig source, List<String> errors) {
+        JobConfigDTO.OracleConfig oracle = source.getOracle();
         if (oracle == null) {
             errors.add("Oracle source configuration is required");
             return;
         }
-        
-        if (oracle.get("owner") == null || oracle.get("owner").toString().trim().isEmpty()) {
+
+        if (oracle.getOwner() == null || oracle.getOwner().trim().isEmpty()) {
             errors.add("Oracle owner is required");
         }
-        
-        if (oracle.get("table") == null || oracle.get("table").toString().trim().isEmpty()) {
+
+        if (oracle.getTable() == null || oracle.getTable().trim().isEmpty()) {
             errors.add("Oracle table is required");
         }
-        
-        List<String> clobColumns = (List<String>) oracle.get("clob_columns");
+
+        List<String> clobColumns = oracle.getClobColumns();
         if (clobColumns == null || clobColumns.isEmpty()) {
             errors.add("At least one CLOB column is required");
         }
-        
-        List<String> keyColumns = (List<String>) oracle.get("key_columns");
+
+        List<String> keyColumns = oracle.getKeyColumns();
         if (keyColumns == null || keyColumns.isEmpty()) {
             errors.add("At least one key column is required");
         }
@@ -390,18 +394,18 @@ public class ConfigurationService {
     /**
      * 驗證目標配置
      */
-    private void validateTargetConfig(Map<String, Object> target, List<String> errors) {
-        Map<String, Object> mongodb = (Map<String, Object>) target.get("mongodb");
+    private void validateTargetConfig(JobConfigDTO.TargetConfig target, List<String> errors) {
+    	JobConfigDTO.MongodbConfig mongodb = target.getMongodb();
         if (mongodb == null) {
             errors.add("MongoDB target configuration is required");
             return;
         }
         
-        if (mongodb.get("database") == null || mongodb.get("database").toString().trim().isEmpty()) {
+        if (mongodb.getDatabase() == null || mongodb.getDatabase().toString().trim().isEmpty()) {
             errors.add("MongoDB database is required");
         }
         
-        if (mongodb.get("collection") == null || mongodb.get("collection").toString().trim().isEmpty()) {
+        if (mongodb.getCollection() == null || mongodb.getCollection().toString().trim().isEmpty()) {
             errors.add("MongoDB collection is required");
         }
     }
@@ -409,12 +413,12 @@ public class ConfigurationService {
     /**
      * 驗證排程配置
      */
-    private void validateScheduleConfig(Map<String, Object> schedule, List<String> errors) {
-        if (schedule.get("cron") == null || schedule.get("cron").toString().trim().isEmpty()) {
+    private void validateScheduleConfig(JobConfigDTO.ScheduleConfig schedule, List<String> errors) {
+        if (schedule.getCron() == null || schedule.getCron().trim().isEmpty()) {
             errors.add("Cron expression is required when schedule is configured");
         } else {
             // 簡單的cron表達式驗證
-            String cronExpression = schedule.get("cron").toString();
+            String cronExpression = schedule.getCron().toString();
             if (!isValidCronExpression(cronExpression)) {
                 errors.add("Invalid cron expression: " + cronExpression);
             }
@@ -505,9 +509,9 @@ public class ConfigurationService {
         // 按狀態統計
         Map<String, Integer> statusCounts = new HashMap<>();
         for (JobConfigDTO config : jobConfigs.values()) {
-            Map<String, Object> schedule = config.getSchedule();
+        	JobConfigDTO.ScheduleConfig schedule = config.getSchedule();
             if (schedule != null) {
-                Boolean enabled = (Boolean) schedule.get("enabled");
+                Boolean enabled =  schedule.isEnabled();
                 String status = (enabled != null && enabled) ? "enabled" : "disabled";
                 statusCounts.put(status, statusCounts.getOrDefault(status, 0) + 1);
             } else {

@@ -1,7 +1,11 @@
 package com.example.migration.batch.writer;
 
+import com.example.migration.batch.listener.StepExecutionListener;
 import com.example.migration.model.document.MigrationDocument;
+import com.example.migration.model.dto.JobConfigDTO;
 import com.example.migration.service.ConfigurationService;
+
+import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,12 +29,24 @@ public class OracleArchiveWriter implements ItemWriter<MigrationDocument> {
 
     @Autowired
     private ConfigurationService configurationService;
+    
+    @Autowired
+    private StepExecutionListener stepExecutionListener;
 
     @Override
     public void write(Chunk<? extends MigrationDocument> chunk) throws Exception {
         List<? extends MigrationDocument> documents = chunk.getItems();
         
-        var config = configurationService.getCurrentJobConfig();
+    	// 從 Listener 中取出 StepExecution
+        StepExecution stepExecution = stepExecutionListener.getStepExecution();
+
+        // 取得當前 Job 名稱
+        String jobName = stepExecution
+                            .getJobExecution()
+                            .getJobInstance()
+                            .getJobName();
+        
+    	JobConfigDTO config = configurationService.getJobConfig(jobName);
         if (!config.getArchive().isEnabled()) {
             return;
         }

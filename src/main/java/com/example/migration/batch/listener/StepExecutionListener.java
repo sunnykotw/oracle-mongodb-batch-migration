@@ -30,6 +30,8 @@ public class StepExecutionListener implements org.springframework.batch.core.Ste
 
     @Value("${batch.step.error.threshold:100}")
     private long errorThreshold;
+    
+    private StepExecution stepExecution;
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final AtomicLong STEP_COUNTER = new AtomicLong(0);
@@ -42,6 +44,7 @@ public class StepExecutionListener implements org.springframework.batch.core.Ste
         String stepName = stepExecution.getStepName();
         Long stepId = stepExecution.getId();
         LocalDateTime startTime = LocalDateTime.now();
+        this.stepExecution = stepExecution;
         
         log.info("----------------------------------------");
         log.info("步驟開始執行");
@@ -325,5 +328,10 @@ public class StepExecutionListener implements org.springframework.batch.core.Ste
     private void recordStepEnd(StepExecution stepExecution) {
         // 這裡可以實現監控系統的記錄邏輯
         log.debug("記錄步驟結束監控資訊");
+    }
+    
+    /** 讓其他 Bean 可以讀取到 StepExecution */
+    public StepExecution getStepExecution() {
+        return this.stepExecution;
     }
 }

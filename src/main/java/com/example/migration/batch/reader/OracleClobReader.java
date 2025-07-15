@@ -1,7 +1,12 @@
 package com.example.migration.batch.reader;
 
+import com.example.migration.batch.listener.StepExecutionListener;
+import com.example.migration.model.dto.JobConfigDTO;
+import com.example.migration.model.dto.JobConfigDTO.OracleConfig;
 import com.example.migration.model.entity.OracleEntity;
 import com.example.migration.service.ConfigurationService;
+
+import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
@@ -28,6 +33,9 @@ public class OracleClobReader implements ItemReader<OracleEntity> {
 
     @Autowired
     private ConfigurationService configurationService;
+    
+    @Autowired
+    private StepExecutionListener stepExecutionListener;
 
     private JdbcCursorItemReader<OracleEntity> delegate;
     private boolean initialized = false;
@@ -40,7 +48,7 @@ public class OracleClobReader implements ItemReader<OracleEntity> {
         return delegate.read();
     }
 
-    private void initialize() {
+    private void initialize() throws Exception {
         String sql = buildSql();
         
         delegate = new JdbcCursorItemReaderBuilder<OracleEntity>()
@@ -56,8 +64,17 @@ public class OracleClobReader implements ItemReader<OracleEntity> {
     }
 
     private String buildSql() {
-        var config = configurationService.getCurrentJobConfig();
-        var sourceConfig = config.getSource().getOracle();
+    	// 從 Listener 中取出 StepExecution
+        StepExecution stepExecution = stepExecutionListener.getStepExecution();
+
+        // 取得當前 Job 名稱
+        String jobName = stepExecution
+                            .getJobExecution()
+                            .getJobInstance()
+                            .getJobName();
+        
+    	JobConfigDTO config = configurationService.getJobConfig(jobName);
+    	OracleConfig sourceConfig = config.getSource().getOracle();
         
         StringBuilder sql = new StringBuilder("SELECT ");
         

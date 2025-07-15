@@ -83,19 +83,19 @@ public class MonitoringService {
                 .register(meterRegistry);
 
         activeJobsGauge = new AtomicLong(0);
-        Gauge.builder("migration.job.active")
+        Gauge.builder("migration.job.active", activeJobsGauge, AtomicLong::get)
                 .description("Number of currently active jobs")
-                .register(meterRegistry, activeJobsGauge, AtomicLong::get);
+                .register(meterRegistry);
 
         totalRecordsProcessedGauge = new AtomicLong(0);
-        Gauge.builder("migration.records.processed.total")
+        Gauge.builder("migration.records.processed.total", totalRecordsProcessedGauge, AtomicLong::get)
                 .description("Total number of records processed")
-                .register(meterRegistry, totalRecordsProcessedGauge, AtomicLong::get);
+                .register(meterRegistry);
 
         errorRecordsGauge = new AtomicLong(0);
-        Gauge.builder("migration.records.error.total")
+        Gauge.builder("migration.records.error.total", errorRecordsGauge, AtomicLong::get)
                 .description("Total number of error records")
-                .register(meterRegistry, errorRecordsGauge, AtomicLong::get);
+                .register(meterRegistry);
 
         logger.info("Monitoring metrics initialized");
     }
@@ -136,11 +136,11 @@ public class MonitoringService {
         // 更新狀態快取
         MigrationStatusDTO status = new MigrationStatusDTO();
         status.setJobName(jobName);
-        status.setExecutionId(executionId);
+        //status.setExecutionId(executionId);
         status.setStatus("STARTED");
         status.setStartTime(LocalDateTime.now());
-        status.setRecordsProcessed(0L);
-        status.setErrorCount(0L);
+        status.setProcessedRecords(0L);
+        //status.setErrorCount(0L);
         statusCache.put(jobName + "_" + executionId, status);
     }
 
@@ -183,13 +183,13 @@ public class MonitoringService {
         if (statusDTO != null) {
             statusDTO.setStatus(status);
             statusDTO.setEndTime(LocalDateTime.now());
-            statusDTO.setRecordsProcessed(recordsProcessed != null ? recordsProcessed : 0L);
-            statusDTO.setErrorCount(errorCount != null ? errorCount : 0L);
+            statusDTO.setProcessedRecords(recordsProcessed != null ? recordsProcessed : 0L);
+            //statusDTO.setErrorCount(errorCount != null ? errorCount : 0L);
             
             // 計算執行時間
             if (statusDTO.getStartTime() != null) {
                 long duration = ChronoUnit.SECONDS.between(statusDTO.getStartTime(), statusDTO.getEndTime());
-                statusDTO.setDuration(duration);
+                statusDTO.setEstimatedRemainingTime(duration);
             }
         }
         
@@ -206,9 +206,9 @@ public class MonitoringService {
         String statusKey = jobName + "_" + executionId;
         MigrationStatusDTO statusDTO = statusCache.get(statusKey);
         if (statusDTO != null) {
-            statusDTO.setRecordsProcessed(recordsProcessed != null ? recordsProcessed : 0L);
-            statusDTO.setErrorCount(errorCount != null ? errorCount : 0L);
-            statusDTO.setLastUpdateTime(LocalDateTime.now());
+            statusDTO.setProcessedRecords(recordsProcessed != null ? recordsProcessed : 0L);
+            //statusDTO.setErrorCount(errorCount != null ? errorCount : 0L);
+            //statusDTO.setLastUpdateTime(LocalDateTime.now());
         }
     }
 
@@ -589,7 +589,7 @@ public class MonitoringService {
     private MigrationStatusDTO convertToStatusDTO(JobExecutionHistory history) {
         MigrationStatusDTO status = new MigrationStatusDTO();
         status.setJobName(history.getJobName());
-        status.setExecutionId(history.getExecutionId());
+        //status.setExecutionId(history.getId());
         status.setStatus(history.getStatus());
         status.setStartTime(history.getStartTime());
         status.setEndTime(history.getEndTime());
@@ -598,8 +598,8 @@ public class MonitoringService {
         if (history.getExitMessage() != null) {
             // 這裡可以根據實際的退出訊息格式來解析
             // 暫時設置為0
-            status.setRecordsProcessed(0L);
-            status.setErrorCount(0L);
+            status.setProcessedRecords(0L);
+           // status.setErrorCount(0L);
         }
         
         return status;

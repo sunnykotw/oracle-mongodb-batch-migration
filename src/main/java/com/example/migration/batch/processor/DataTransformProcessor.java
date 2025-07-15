@@ -1,15 +1,20 @@
 package com.example.migration.batch.processor;
 
+import com.example.migration.batch.listener.StepExecutionListener;
 import com.example.migration.model.document.MigrationDocument;
+import com.example.migration.model.dto.JobConfigDTO;
 import com.example.migration.model.entity.OracleEntity;
 import com.example.migration.service.ConfigurationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -24,6 +29,9 @@ public class DataTransformProcessor implements ItemProcessor<OracleEntity, Migra
 
     @Autowired
     private ObjectMapper objectMapper;
+    
+    @Autowired
+    private StepExecutionListener stepExecutionListener;
 
     @Override
     public MigrationDocument process(OracleEntity item) throws Exception {
@@ -49,8 +57,17 @@ public class DataTransformProcessor implements ItemProcessor<OracleEntity, Migra
     }
 
     private String generateDocumentId(OracleEntity entity) {
-        var config = configurationService.getCurrentJobConfig();
-        var keyColumns = config.getSource().getOracle().getKeyColumns();
+    	// 從 Listener 中取出 StepExecution
+        StepExecution stepExecution = stepExecutionListener.getStepExecution();
+
+        // 取得當前 Job 名稱
+        String jobName = stepExecution
+                            .getJobExecution()
+                            .getJobInstance()
+                            .getJobName();
+        
+    	JobConfigDTO config = configurationService.getJobConfig(jobName);
+    	List<String> keyColumns = config.getSource().getOracle().getKeyColumns();
         
         StringBuilder id = new StringBuilder();
         for (String keyColumn : keyColumns) {
@@ -69,7 +86,16 @@ public class DataTransformProcessor implements ItemProcessor<OracleEntity, Migra
     }
 
     private String getSourceTableName() {
-        var config = configurationService.getCurrentJobConfig();
+    	// 從 Listener 中取出 StepExecution
+        StepExecution stepExecution = stepExecutionListener.getStepExecution();
+
+        // 取得當前 Job 名稱
+        String jobName = stepExecution
+                            .getJobExecution()
+                            .getJobInstance()
+                            .getJobName();
+        
+    	JobConfigDTO config = configurationService.getJobConfig(jobName);
         return config.getSource().getOracle().getTable();
     }
 
